@@ -1,0 +1,18 @@
+body {
+  /* 1. 배경 이미지 URL 지정 */
+background-image: url('/asset/gym.png');
+  
+  /* 2. 화면 전체를 가득 채우도록 설정 */
+  background-size: cover;
+  
+  /* 3. 스크롤해도 배경 이미지가 고정되도록 설정 */
+  background-attachment: fixed;
+  
+  /* 4. 정중앙 정렬 및 반복 방지 */
+  background-position: center;
+  background-repeat: no-repeat;
+
+  /* 5. 기존 여백 제거 및 화면 전체 높이 확보 */
+  margin: 0;
+  min-height: 100vh;
+}

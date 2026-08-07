@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # 1. MySQL 데이터베이스 컨테이너
+  db:
+    image: mysql:8.0
+    container_name: workout-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: my_workout
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # 2. Express 백엔드 서버 컨테이너
+  app:
+    build: .
+    container_name: workout-app
+    restart: always
+    ports:
+      - "8080:3000"
+    environment:
+      DATABASE_URL: "mysql://root:rootpassword@db:3306/my_workout"
+      PORT: 3000
+      JWT_SECRET: "my_secret_key"
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:

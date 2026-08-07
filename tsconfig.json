@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "commonjs",             // 👈 복잡한 NodeNext 대신 안정적인 commonjs로 선회합니다
+    "lib": ["es2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,             // 👈 패키지 내부 타입 트집 잡는 걸 무시합니다. (핵심 ⭐)
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+
+    "rootDir": "./src",                  // 👈 [TS5011 해결] 소스 코드의 기준 폴더를 ./src로 명확히 고정합니다.
+    "moduleResolution": "node10",         // 👈 node 대신 최신 규격인 node10으로 명시합니다.
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["src/**/*"]
+}

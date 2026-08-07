@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  name      String
+  createdAt DateTime  @default(now())
+  workouts  Workout[] // 👈 한 명의 유저는 여러 운동 기록을 가집니다 (1:N)
+}
+
+model Workout {
+  id        Int      @id @default(autoincrement())
+  title     String
+  sets      Int
+  reps      Int
+  weight    Float
+  createdAt DateTime @default(now())
+
+  // 👈 어떤 유저의 운동 기록인지 나타내는 외래키(FK)
+  userId    Int
+  //유저가 회원 탈퇴를 해서 User 데이터가 삭제되면, 
+  //그 유저가 작성했던 모든 Workout 기록도 DB에서 함께 자동으로 삭제
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+}

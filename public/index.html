@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내 손으로 만든 운동 메모장</title>
+  <link rel="stylesheet" href="./css/gym.css">
+  <style>
+    * { box-sizing: border-box; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
+    body { background-color: #f8fafc; margin: 0; padding: 40px 20px; display: flex; justify-content: center; position: relative; }
+    .container { width: 100%; max-width: 480px; }
+    .card { background: #ffffff; padding: 28px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
+    h1 { text-align: center; color: #1e293b; font-size: 22px; margin-bottom: 24px; }
+    h2 { font-size: 18px; color: #334155; margin-top: 0; margin-bottom: 16px; }
+    .input-group { margin-bottom: 12px; }
+    label { font-size: 13px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px; }
+    input { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; transition: all 0.2s; }
+    input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    button { width: 100%; padding: 12px; font-weight: 600; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-warning { background: #f59e0b; color: white; width: auto; padding: 6px 12px; font-size: 12px; margin: 0; }
+    .btn-warning:hover { background: #d97706; }
+    .btn-danger { background: #ef4444; color: white; width: auto; padding: 6px 12px; font-size: 12px; margin: 0; }
+    .btn-danger:hover { background: #dc2626; }
+    .workout-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 10px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .workout-info strong { color: #0f172a; font-size: 15px; }
+    .workout-info p { margin: 4px 0 0 0; font-size: 13px; color: #64748b; }
+    .action-buttons { display: flex; gap: 6px; }
+    .hidden { display: none !important; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+
+    /* 🍔 왼쪽 상단 사이드바 버튼 및 메뉴 스타일 */
+    .menu-toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      width: 44px;
+      height: 44px;
+      font-size: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transition: all 0.2s;
+    }
+    .menu-toggle-btn:hover { background: #f1f5f9; transform: scale(1.05); }
+
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(4px);
+      z-index: 1001;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .sidebar-overlay.active { opacity: 1; visibility: visible; }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -280px;
+      width: 280px;
+      height: 100vh;
+      background: #ffffff;
+      z-index: 1002;
+      padding: 30px 20px;
+      box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+      transition: left 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar.active { left: 0; }
+
+    .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .sidebar-header h3 { margin: 0; font-size: 18px; color: #1e293b; }
+    .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b; width: auto; padding: 0; margin: 0; }
+
+    .sidebar-menu { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
+    .sidebar-menu li { margin-bottom: 8px; }
+    .sidebar-menu a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      color: #334155;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 10px;
+      transition: background 0.2s;
+    }
+    .sidebar-menu a:hover { background: #f1f5f9; color: #2563eb; }
+    .sidebar-footer { padding-top: 20px; border-top: 1px solid #f1f5f9; font-size: 12px; color: #94a3b8; text-align: center; }
+  </style>
+</head>
+<body>
+
+<!-- 🍔 1. 왼쪽 상단 메뉴 버튼 -->
+<button class="menu-toggle-btn" onclick="toggleSidebar()">☰</button>
+
+<!-- ⬛ 2. 사이드바 배경 어둡게 처리(Overlay) -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- 📂 3. 사이드바 메인 메뉴 -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h3>🏋️ 운동 메뉴</h3>
+    <button class="close-btn" onclick="toggleSidebar()">✕</button>
+  </div>
+  <ul class="sidebar-menu">
+    <li><a href="#" onclick="toggleSidebar()">📝 오늘 운동 메모장</a></li>
+    <li><a href="#" onclick="alert('추후 구현될 주간/월간 통계 페이지입니다!'); toggleSidebar();">📊 운동 통계 (준비중)</a></li>
+    <li><a href="#" onclick="alert('추후 구현될 개인 설정 페이지입니다!'); toggleSidebar();">⚙️ 설정 (준비중)</a></li>
+  </ul>
+  <div class="sidebar-footer">
+    <p>내 손으로 만든 운동 메모장 v1.0</p>
+  </div>
+</div>
+
+<div class="container">
+  <h1>🏋️ 내 손으로 만든 운동 메모장</h1>
+
+  <!-- 🏆 추정 1RM 카드 (container 안쪽 정렬) -->
+  <div id="1rm-card" class="card hidden" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 20px;">
+    <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #ffffff; display: flex; align-items: center; gap: 6px;">
+      🏆 종목별 추정 1RM 최고 기록
+    </h3>
+    <div id="1rm-list" style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <!-- JS에서 Dynamic 로드 -->
+    </div>
+  </div>
+
+  <!-- 🔑 1. 로그인 & 회원가입 폼 -->
+  <div id="auth-section" class="card">
+    <h2>🔑 로그인 / 회원가입</h2>
+    <div class="input-group">
+      <label>이메일</label>
+      <input type="email" id="auth-email" placeholder="example@naver.com">
+    </div>
+    <div class="input-group">
+      <label>비밀번호</label>
+      <input type="password" id="auth-password" placeholder="비밀번호 입력">
+    </div>
+    <div class="input-group">
+      <label>이름 (회원가입 시 필요)</label>
+      <input type="text" id="auth-name" placeholder="홍길동">
+    </div>
+    
+    <div style="display: flex; gap: 8px; margin-top: 12px;">
+      <button class="btn-success" onclick="handleLogin()">로그인</button>
+      <button class="btn-primary" onclick="handleSignup()">회원가입</button>
+    </div>
+  </div>
+
+  <!-- 🏋️ 2. 운동 메모장 메인 (로그인 완료 시 표시) -->
+  <div id="workout-section" class="card hidden">
+    <div class="header-bar">
+      <h2 style="margin: 0;" id="form-title">💪 오늘 운동 기록</h2>
+      <button class="btn-danger" onclick="handleLogout()">로그아웃</button>
+    </div>
+
+    <!-- 📅 날짜 선택 UI -->
+    <div class="input-group" style="margin-bottom: 16px;">
+      <label>📅 날짜 선택</label>
+      <input type="date" id="selected-date" onchange="fetchWorkouts()">
+    </div>
+
+    <!-- 수정 모드 상태 저장을 위한 숨겨진 ID 필드 -->
+    <input type="hidden" id="edit-id" value="">
+
+    <div class="input-group">
+      <label>운동 이름</label>
+      <input type="text" id="title" placeholder="예: 벤치프레스">
+    </div>
+
+    <div class="grid-3 input-group">
+      <div>
+        <label>세트 수</label>
+        <input type="number" id="sets"  min = "1" value="5">
+        
+      </div>
+      <div>
+        <label>횟수 (Reps)</label>
+        <input type="number" id="reps"  min = "1" value="10">
+      </div>
+      <div>
+        <label>무게 (kg)</label>
+        <input type="number" id="weight"  min = "1" value="80">
+      </div>
+    </div>
+
+    <button id="save-btn" class="btn-primary" onclick="saveWorkout()">💪 오늘 운동 저장하기</button>
+    <button id="cancel-edit-btn" class="btn-danger hidden" style="width:100%; margin-top:6px;" onclick="resetForm()">취소</button>
+
+    <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 20px 0;">
+
+    <h2 style="font-size: 16px;">오늘의 운동 목록</h2>
+    <div id="workout-list">
+      <!-- 운동 목록이 여기에 로드됩니다 -->
+    </div>
+  </div>
+</div>
+
+<script>
+  // 로컬스토리지 토큰 가져오기
+  const getToken = () => localStorage.getItem('token');
+
+  // 🍔 사이드바 열기/닫기 토글 함수
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+  }
+
+  // 로그인 상태 체크 및 화면 교체
+  function checkAuth() {
+    const token = getToken();
+    if (token) {
+      document.getElementById('auth-section').classList.add('hidden');
+      document.getElementById('workout-section').classList.remove('hidden');
+      fetchWorkouts();
+      fetch1RMStats(); // 1RM 통계 데이터 불러오기 추가
+    } else {
+      document.getElementById('auth-section').classList.remove('hidden');
+      document.getElementById('workout-section').classList.add('hidden');
+      document.getElementById('1rm-card').classList.add('hidden');
+    }
+  }
+
+  // 회원가입
+  async function handleSignup() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const name = document.getElementById('auth-name').value;
+
+    if (!email || !password || !name) {
+      return alert('이메일, 비밀번호, 이름을 모두 입력해주세요.');
+    }
+
+    const res = await fetch('/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name })
+    });
+    const data = await res.json();
+    alert(data.message || data.error);
+  }
+
+  // 로그인
+  async function handleLogin() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+
+    if (!email || !password) {
+      return alert('이메일과 비밀번호를 입력해주세요.');
+    }
+
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      alert('🔑 로그인 성공!');
+      checkAuth();
+    } else {
+      alert(data.error || '로그인 실패');
+    }
+  }
+
+  // 로그아웃
+  function handleLogout() {
+    localStorage.removeItem('token');
+    alert('로그아웃 되었습니다.');
+    checkAuth();
+  }
+
+  // 🏆 종목별 추정 1RM 불러오기 함수
+  async function fetch1RMStats() {
+    try {
+      const res = await fetch('/workouts/stats/1rm', {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      const result = await res.json();
+
+      const container = document.getElementById('1rm-card');
+      const listDiv = document.getElementById('1rm-list');
+
+      if (result.data && result.data.length > 0) {
+        container.classList.remove('hidden');
+        listDiv.innerHTML = result.data.map(item => `
+          <div style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); padding: 6px 12px; border-radius: 8px; font-size: 13px;">
+            <strong>${item.title}</strong>: <span style="font-weight: bold; color: #fde047;">${item.max1RM} kg</span>
+          </div>
+        `).join('');
+      } else {
+        container.classList.add('hidden');
+      }
+    } catch (error) {
+      console.error('1RM 통계 로드 실패:', error);
+    }
+  }
+
+  // 운동 목록 전역 변수 저장용
+  let currentWorkouts = [];
+
+  // 운동 목록 불러오기 (날짜 쿼리 파라미터 적용)
+  async function fetchWorkouts() {
+    const dateInput = document.getElementById('selected-date');
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    const selectedDate = dateInput ? dateInput.value : '';
+
+    const res = await fetch(`/workouts?date=${selectedDate}`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const result = await res.json();
+
+    const listDiv = document.getElementById('workout-list');
+    listDiv.innerHTML = '';
+    currentWorkouts = result.data || [];
+
+    if (currentWorkouts.length > 0) {
+      currentWorkouts.forEach(item => {
+        listDiv.innerHTML += `
+          <div class="workout-item">
+            <div class="workout-info">
+              <strong>${item.title}</strong>
+              <p>${item.weight}kg · ${item.sets}세트 x ${item.reps}회</p>
+            </div>
+            <div class="action-buttons">
+              <button class="btn-warning" onclick="startEdit(${item.id})">수정</button>
+              <button class="btn-danger" onclick="deleteWorkout(${item.id})">삭제</button>
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      listDiv.innerHTML = `<p style="text-align:center; color:#94a3b8; font-size:14px; margin-top:20px;">
+        ${selectedDate}에는 저장된 운동이 없습니다. 🏋️
+      </p>`;
+    }
+  }
+
+  // 운동 저장 (추가/수정 공통 처리)
+  async function saveWorkout() {
+    const editId = document.getElementById('edit-id').value;
+    const title = document.getElementById('title').value;
+    const sets = document.getElementById('sets').value;
+    const reps = document.getElementById('reps').value;
+    const weight = document.getElementById('weight').value;
+
+    if (!title) return alert('운동 이름을 입력해 주세요.');
+
+    const isEdit = Boolean(editId);
+    const url = isEdit ? `/workouts/${editId}` : '/workouts';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({ title, sets, reps, weight })
+    });
+
+    if (res.ok) {
+      resetForm();
+      fetchWorkouts();
+      fetch1RMStats(); // 저장 후 1RM 기록 재계산
+    } else {
+      alert(isEdit ? '수정에 실패했습니다.' : '저장에 실패했습니다.');
+    }
+  }
+
+  // 수정 버튼 클릭 시 폼에 해당 데이터 채우기
+  function startEdit(id) {
+    const workout = currentWorkouts.find(w => w.id === id);
+    if (!workout) return;
+
+    document.getElementById('edit-id').value = workout.id;
+    document.getElementById('title').value = workout.title;
+    document.getElementById('sets').value = workout.sets;
+    document.getElementById('reps').value = workout.reps;
+    document.getElementById('weight').value = workout.weight;
+
+    document.getElementById('form-title').innerText = '✏️ 운동 기록 수정';
+    document.getElementById('save-btn').innerText = '✏️ 운동 기록 수정완료';
+    document.getElementById('cancel-edit-btn').classList.remove('hidden');
+  }
+
+  // 폼 초기화 (수정 모드 취소 포함)
+  function resetForm() {
+    document.getElementById('edit-id').value = '';
+    document.getElementById('title').value = '';
+    document.getElementById('sets').value = '5';
+    document.getElementById('reps').value = '10';
+    document.getElementById('weight').value = '80';
+
+    document.getElementById('form-title').innerText = '💪 오늘 운동 기록';
+    document.getElementById('save-btn').innerText = '💪 오늘 운동 저장하기';
+    document.getElementById('cancel-edit-btn').classList.add('hidden');
+  }
+
+  // 운동 삭제
+  async function deleteWorkout(id) {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    await fetch(`/workouts/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    fetchWorkouts();
+    fetch1RMStats(); // 삭제 후 1RM 기록 재계산
+  }
+
+  // 실행 시 로그인 여부 체크
+  checkAuth();
+</script>
+
+</body>
+</html>
