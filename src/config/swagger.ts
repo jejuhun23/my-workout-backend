@@ -1,30 +1,27 @@
 import swaggerJSDoc from 'swagger-jsdoc';
 
-const options: swaggerJSDoc.Options = {
+const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: '🏋️ 운동 메모장 API 문서',
+      title: 'Workout API',
       version: '1.0.0',
-      description: 'Node.js, Express, TypeScript, Prisma 기반 운동 메모장 REST API 명세서입니다.',
     },
     servers: [
       {
+        url: 'https://my-workout-api-g497.onrender.com',
+        description: 'Production Server (Render)',
+      },
+      {
         url: 'http://localhost:3000',
-        description: '로컬 개발 서버',
+        description: 'Local Server',
       },
     ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
-      },
-    },
   },
-  apis: ['./src/routes/*.ts', './src/app.ts'],
+  apis: ['./src/routes/*.ts'], // 라우트 파일 위치
 };
+
+
+
 
 export const specs = swaggerJSDoc(options);
