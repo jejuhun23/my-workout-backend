@@ -12,6 +12,7 @@ const app = express();
 app.use(express.static(path.join(process.cwd(), 'public')));
 app.use(express.json());
 app.use(express.static('public'));
+app.use('/workouts', workoutRouter); // 또는 /api/workouts
 
 // 💡 Swagger API 문서 라우트 연결
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));

@@ -12,13 +12,24 @@ const options = {
         url: 'https://my-workout-api-g497.onrender.com',
         description: 'Production Server (Render)',
       },
+    ],
+    // 👇 이 부분(components, security)을 추가해 주세요!
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    security: [
       {
-        url: 'http://localhost:3000',
-        description: 'Local Server',
+        bearerAuth: [],
       },
     ],
   },
-  apis: ['./src/routes/*.ts'], // 라우트 파일 위치
+  apis: ['./src/routes/*.ts', './dist/routes/*.js'],
 };
 
 

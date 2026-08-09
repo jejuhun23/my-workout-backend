@@ -3,6 +3,7 @@ import {prisma} from '../lib/prisma';
 import { authenticateToken, AuthRequest } from '../middlewares/auth';
 import { Workout } from '@prisma/client';
 
+
 const router = Router();
 
 function validateWorkoutInput(title: any, sets: any, reps: any, weight: any) {
