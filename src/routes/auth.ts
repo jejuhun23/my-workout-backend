@@ -69,9 +69,9 @@ router.post('/signup', async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /auth/signup:
+ * /auth/login:
  *   post:
- *     summary: 회원가입
+ *     summary: 로그인
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -79,26 +79,20 @@ router.post('/signup', async (req: Request, res: Response) => {
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - email
- *               - password
- *               - name
  *             properties:
  *               email:
  *                 type: string
- *                 example: test@example.com
+ *                 example: rlawogjs222000@naver.com
  *               password:
  *                 type: string
- *                 example: password123!
- *               name:
- *                 type: string
- *                 example: 홍길동
+ *                 example: "@bbc1472588!"
  *     responses:
- *       201:
- *         description: 회원가입 성공
+ *       200:
+ *         description: 로그인 성공 및 토큰 발급
  *       400:
- *         description: 이미 존재하는 이메일
+ *         description: 잘못된 요청 또는 회원 정보 없음
  */
+// 기존 로그인 라우터 코드 (예: router.post('/login', ...))
 
 // 2. 로그인 (JWT 토큰 발급)
 router.post('/login', async (req: Request, res: Response) => {
