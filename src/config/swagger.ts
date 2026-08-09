@@ -14,6 +14,7 @@ const options = {
       },
     ],
     // 👇 이 부분(components, security)을 추가해 주세요!
+    // 👇 아래 components 및 security 설정 추가
     components: {
       securitySchemes: {
         bearerAuth: {
