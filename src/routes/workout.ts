@@ -204,4 +204,45 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// 필요한 컨트롤러 및 인증 미들웨어 import
+
+/**
+ * @swagger
+ * /workouts:
+ *   get:
+ *     summary: 운동 기록 목록 조회
+ *     tags: [Workouts]
+ *     responses:
+ *       200:
+ *         description: 운동 목록 조회 성공
+ *   post:
+ *     summary: 운동 기록 생성
+ *     tags: [Workouts]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: "벤치프레스"
+ *               sets:
+ *                 type: number
+ *                 example: 5
+ *               weight:
+ *                 type: number
+ *                 example: 80
+ *               reps:
+ *                 type: number
+ *                 example: 10
+ *     responses:
+ *       201:
+ *         description: 운동 기록 생성 성공
+ */
+// 기존 운동 라우트 선언부
+// router.get('/', authenticateToken, getWorkouts);
+// router.post('/', authenticateToken, createWorkout);
+
 export default router;
