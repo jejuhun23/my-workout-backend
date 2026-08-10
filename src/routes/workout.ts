@@ -4,7 +4,104 @@ import { authenticateToken, AuthRequest } from '../middlewares/auth';
 import { Workout } from '@prisma/client';
 
 
+// 모든 운동 라우트에 JWT 인증 미들웨어 적용
+router.use(authenticateToken);
+
 const router = Router();
+
+/**
+ * @swagger
+ * /workouts/{id}:
+ *   patch:
+ *     summary: 운동 기록 수정
+ *     tags: [Workouts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 수정할 운동 기록 ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               sets:
+ *                 type: integer
+ *               weight:
+ *                 type: integer
+ *               reps:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: 운동 기록 수정 성공
+ *       403:
+ *         description: 수정 권한 없음
+ *       404:
+ *         description: 운동 기록을 찾을 수 없음
+ */
+router.patch('/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const workoutId = Number(req.params.id);
+    const userId = req.user?.id;
+    const { title, sets, weight, reps } = req.body;
+
+    // 1. 해당 운동 기록이 존재하는지 조회
+    const existingWorkout = await prisma.workout.findUnique({
+      where: { id: workoutId },
+    });
+
+    if (!existingWorkout) {
+      return res.status(404).json({ error: '해당 운동 기록을 찾을 수 없습니다.' });
+    }
+
+    // 2. 작성자가 본인인지 검증
+    if (existingWorkout.userId !== userId) {
+      return res.status(403).json({ error: '본인의 운동 기록만 수정할 수 있습니다.' });
+    }
+
+    // 3. 운동 기록 업데이트
+    const updatedWorkout = await prisma.workout.update({
+      where: { id: workoutId },
+      data: { title, sets, weight, reps },
+    });
+
+    res.json({ message: '✅ 운동 기록 수정 완료!', data: updatedWorkout });
+  } catch (error) {
+    res.status(500).json({ error: '운동 기록 수정 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
+ * @swagger
+ * /workouts/{id}:
+ *   delete:
+ *     summary: 운동 기록 삭제
+ *     tags: [Workouts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 삭제할 운동 기록 ID
+ *     responses:
+ *       200:
+ *         description: 운동 기록 삭제 성공
+ *       403:
+ *         description: 삭제 권한 없음
+ *       404:
+ *         description: 운동 기록을 찾을 수 없음
+ */
 
 function validateWorkoutInput(title: any, sets: any, reps: any, weight: any) {
   if (!title || sets === undefined || reps === undefined || weight === undefined) {
@@ -22,8 +119,7 @@ function validateWorkoutInput(title: any, sets: any, reps: any, weight: any) {
   return null; // 문제 없음
 }
 
-//모든 운동 라우트에 인증 미들웨어 적용
-router.use(authenticateToken); // 토큰 확인을 통하여 로그인한 사람이 맞는지 검사
+
 
 // 1. 내 운동 기록 저장
 router.post('/', async (req: Request, res: Response) => {
@@ -180,28 +276,33 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // 5. 내 운동 기록 삭제 (DELETE)
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const authReq = req as AuthRequest;
-    const { id } = req.params;
-    const userId = authReq.userId!;
+    const workoutId = Number(req.params.id);
+    const userId = req.user?.id;
 
-    const existingWorkout = await prisma.workout.findFirst({
-      where: { id: Number(id), userId },
+    // 1. 해당 운동 기록이 존재하는지 조회
+    const existingWorkout = await prisma.workout.findUnique({
+      where: { id: workoutId },
     });
 
     if (!existingWorkout) {
-      return res.status(404).json({ error: '해당 운동 기록을 찾을 수 없거나 권한이 없습니다.' });
+      return res.status(404).json({ error: '해당 운동 기록을 찾을 수 없습니다.' });
     }
 
+    // 2. 작성자가 본인인지 검증
+    if (existingWorkout.userId !== userId) {
+      return res.status(403).json({ error: '본인의 운동 기록만 삭제할 수 있습니다.' });
+    }
+
+    // 3. 운동 기록 삭제
     await prisma.workout.delete({
-      where: { id: Number(id) },
+      where: { id: workoutId },
     });
 
-    res.status(200).json({ message: '✅ 삭제 완료!' });
+    res.json({ message: '🗑️ 운동 기록 삭제 완료!' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: '데이터를 삭제하는 중 서버 오류 발생' });
+    res.status(500).json({ error: '운동 기록 삭제 중 오류가 발생했습니다.' });
   }
 });
 
