@@ -7,6 +7,17 @@ import path from 'path';
 
 const app = express();
 
+// 💡 Swagger UI 설정 옵션 추가 (CDN 정적 자원 연결)
+const swaggerUiOptions = {
+  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.18.3/swagger-ui.min.css',
+  customJs: [
+    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.18.3/swagger-ui-bundle.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.18.3/swagger-ui-standalone-preset.js',
+  ],
+};
+
+// Swagger 엔드포인트 연결
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 // process.cwd()를 사용하면 실행 위치(프로젝트 루트) 기준으로 public 폴더를 찾아갑니다.
 app.use(express.static(path.join(process.cwd(), 'public')));

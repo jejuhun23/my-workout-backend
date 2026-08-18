@@ -1,29 +1,53 @@
 import { Router, Request, Response } from 'express';
-import {prisma} from '../lib/prisma';
+import { prisma } from '../lib/prisma';
 import { authenticateToken, AuthRequest } from '../middlewares/auth';
 import { Workout } from '@prisma/client';
 
+const router = Router();
 
 // 모든 운동 라우트에 JWT 인증 미들웨어 적용
 router.use(authenticateToken);
 
-const router = Router();
+// 입력값 유효성 검증 함수
+function validateWorkoutInput(title: any, sets: any, reps: any, weight: any) {
+  if (!title || sets === undefined || reps === undefined || weight === undefined) {
+    return '모든 운동 정보를 입력해 주세요.';
+  }
+  const numSets = Number(sets);
+  const numReps = Number(reps);
+  const numWeight = Number(weight);
+
+  if (isNaN(numSets) || isNaN(numReps) || isNaN(numWeight)) {
+    return '세트, 횟수, 무게는 숫자여야 합니다.';
+  }
+  if (numSets <= 0 || numReps <= 0 || numWeight < 0) {
+    return '세트와 횟수는 0보다 커야 하며, 무게는 0 이상이어야 합니다.';
+  }
+  return null; // 검증 통과
+}
 
 /**
  * @swagger
- * /workouts/{id}:
- *   patch:
- *     summary: 운동 기록 수정
+ * /workouts:
+ *   get:
+ *     summary: 내 운동 기록 목록 조회
  *     tags: [Workouts]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
+ *       - in: query
+ *         name: date
  *         schema:
- *           type: integer
- *         description: 수정할 운동 기록 ID
+ *           type: string
+ *         description: 조회할 날짜 (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: 운동 목록 조회 성공
+ *   post:
+ *     summary: 운동 기록 생성
+ *     tags: [Workouts]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -33,102 +57,64 @@ const router = Router();
  *             properties:
  *               title:
  *                 type: string
+ *                 example: "벤치프레스"
  *               sets:
- *                 type: integer
- *               weight:
- *                 type: integer
+ *                 type: number
+ *                 example: 5
  *               reps:
- *                 type: integer
+ *                 type: number
+ *                 example: 10
+ *               weight:
+ *                 type: number
+ *                 example: 80
  *     responses:
- *       200:
- *         description: 운동 기록 수정 성공
- *       403:
- *         description: 수정 권한 없음
- *       404:
- *         description: 운동 기록을 찾을 수 없음
+ *       201:
+ *         description: 운동 기록 생성 성공
  */
-router.patch('/:id', async (req: AuthRequest, res: Response) => {
+
+// 1. 내 운동 기록 목록 조회 (날짜 검색 가능)
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const workoutId = Number(req.params.id);
-    const userId = req.user?.id;
-    const { title, sets, weight, reps } = req.body;
+    const authReq = req as AuthRequest;
+    const userId = authReq.userId!;
+    const { date } = req.query;
 
-    // 1. 해당 운동 기록이 존재하는지 조회
-    const existingWorkout = await prisma.workout.findUnique({
-      where: { id: workoutId },
-    });
+    let dateFilter = {};
+    if (date) {
+      const targetDate = new Date(date as string);
+      const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
 
-    if (!existingWorkout) {
-      return res.status(404).json({ error: '해당 운동 기록을 찾을 수 없습니다.' });
+      dateFilter = {
+        createdAt: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      };
     }
 
-    // 2. 작성자가 본인인지 검증
-    if (existingWorkout.userId !== userId) {
-      return res.status(403).json({ error: '본인의 운동 기록만 수정할 수 있습니다.' });
-    }
-
-    // 3. 운동 기록 업데이트
-    const updatedWorkout = await prisma.workout.update({
-      where: { id: workoutId },
-      data: { title, sets, weight, reps },
+    const workouts = await prisma.workout.findMany({
+      where: {
+        userId,
+        ...dateFilter,
+      },
+      orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ message: '✅ 운동 기록 수정 완료!', data: updatedWorkout });
+    res.status(200).json({ message: '✅ 운동 기록 조회 성공!', data: workouts });
   } catch (error) {
-    res.status(500).json({ error: '운동 기록 수정 중 오류가 발생했습니다.' });
+    console.error(error);
+    res.status(500).json({ error: '데이터를 가져오는 중 서버 오류 발생' });
   }
 });
 
-/**
- * @swagger
- * /workouts/{id}:
- *   delete:
- *     summary: 운동 기록 삭제
- *     tags: [Workouts]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: 삭제할 운동 기록 ID
- *     responses:
- *       200:
- *         description: 운동 기록 삭제 성공
- *       403:
- *         description: 삭제 권한 없음
- *       404:
- *         description: 운동 기록을 찾을 수 없음
- */
-
-function validateWorkoutInput(title: any, sets: any, reps: any, weight: any) {
-  if (!title || sets === undefined || reps === undefined || weight === undefined) {
-    return '모든 운동 정보를 입력해 주세요.';
-  }
-  const numSets = Number(sets);
-  const numReps = Number(reps);
-  const numWeight = Number(weight);
-  if (numSets < 0 ||numReps <0 ||numWeight<0) {
-    return '세트, 횟수, 무게는 숫자여야 합니다.';
-  }
-  if (numSets <= 0 || numReps <= 0 || numWeight <0) {
-    return '세트/횟수/무게는 0보다 커야 합니다.';
-  }
-  return null; // 문제 없음
-}
-
-
-
-// 1. 내 운동 기록 저장
+// 2. 운동 기록 생성
 router.post('/', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
     const { title, sets, reps, weight } = req.body;
     const userId = authReq.userId!;
 
-    // 🔧 옛날 검증 코드 삭제하고, 우리가 만든 함수로 교체!
     const validationError = validateWorkoutInput(title, sets, reps, weight);
     if (validationError) {
       return res.status(400).json({ error: validationError });
@@ -151,33 +137,38 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-// 2. 운동 종목별 추정 1RM 계산 및 통계 조회 API
+/**
+ * @swagger
+ * /workouts/stats/1rm:
+ *   get:
+ *     summary: 종목별 추정 1RM 계산 및 통계 조회
+ *     tags: [Workouts]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 1RM 계산 성공
+ */
 router.get('/stats/1rm', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
     const userId = authReq.userId!;
 
-    // 사용자의 모든 운동 기록 조회
     const workouts = await prisma.workout.findMany({
       where: { userId },
     });
 
-    // 종목별 최고 1RM 저장용 객체
     const max1RMMap: { [key: string]: number } = {};
 
     workouts.forEach((w: Workout) => {
-      // Epley 공식 적용 (1회 반복인 경우는 무게 그대로)
-      const estimated1RM = w.reps === 1 
-        ? w.weight 
-        : Math.round(w.weight * (1 + w.reps / 30));
+      const estimated1RM =
+        w.reps === 1 ? w.weight : Math.round(w.weight * (1 + w.reps / 30));
 
-      // 기존 최고 기록보다 높은 경우 업데이트
       if (!max1RMMap[w.title] || estimated1RM > max1RMMap[w.title]) {
         max1RMMap[w.title] = estimated1RM;
       }
     });
 
-    // 배열 형태로 가공
     const stats = Object.keys(max1RMMap).map((title) => ({
       title,
       max1RM: max1RMMap[title],
@@ -190,76 +181,89 @@ router.get('/stats/1rm', async (req: Request, res: Response) => {
   }
 });
 
-// 3. 내가 작성한 운동 기록만 조회 (날짜 쿼리 파라미터 가능)
-router.get('/', async (req: Request, res: Response) => {
-  try {
-    const authReq = req as AuthRequest;
-    const userId = authReq.userId!;
-    const { date } = req.query; // URL의 ?date=YYYY-MM-DD 가져오기
+/**
+ * @swagger
+ * /workouts/{id}:
+ *   put:
+ *     summary: 운동 기록 수정
+ *     tags: [Workouts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               sets:
+ *                 type: number
+ *               reps:
+ *                 type: number
+ *               weight:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: 운동 기록 수정 성공
+ *       403:
+ *         description: 수정 권한 없음
+ *       404:
+ *         description: 운동 기록 없음
+ *   delete:
+ *     summary: 운동 기록 삭제
+ *     tags: [Workouts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 운동 기록 삭제 성공
+ *       403:
+ *         description: 삭제 권한 없음
+ *       404:
+ *         description: 운동 기록 없음
+ */
 
-    // 날짜 조건 설정
-    let dateFilter = {};
-
-    if (date) {
-      const targetDate = new Date(date as string);
-
-      // 선택한 날짜의 00:00:00.000 ~ 23:59:59.999 범위 생성
-      const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
-      const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
-
-      dateFilter = {
-        createdAt: {
-          gte: startOfDay, // 선택한 날짜의 시작 이후
-          lte: endOfDay,   // 선택한 날짜의 끝 이전
-        },
-      };
-    }
-
-    const workouts = await prisma.workout.findMany({
-      where: {
-        userId,
-        ...dateFilter, // date가 있으면 날짜 조건 추가, 없으면 전체 조회
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    res.status(200).json({ message: '✅ 운동 기록 조회 성공!', data: workouts });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: '데이터를 가져오는 중 서버 오류 발생' });
-  }
-});
-
-// 4. 내 운동 기록 수정 (PUT)
+// 4. 운동 기록 수정 (PUT)
 router.put('/:id', async (req: Request, res: Response) => {
-  
   try {
     const authReq = req as AuthRequest;
-    const { id } = req.params;
+    const workoutId = Number(req.params.id);
     const userId = authReq.userId!;
     const { title, sets, reps, weight } = req.body;
 
-    // ① 입력값 유효성 검증 (POST와 동일한 검증 함수 재사용!)
     const validationError = validateWorkoutInput(title, sets, reps, weight);
     if (validationError) {
       return res.status(400).json({ error: validationError });
     }
 
-    const existingWorkout = await prisma.workout.findFirst({
-      where: { 
-        id: Number(id), 
-        userId 
-      },
+    const existingWorkout = await prisma.workout.findUnique({
+      where: { id: workoutId },
     });
 
-    // ② 남의 기록이거나 없는 ID일 경우 404/403 처리
     if (!existingWorkout) {
-      return res.status(404).json({ error: '해당 운동 기록을 찾을 수 없거나 수정 권한이 없습니다.' });
+      return res.status(404).json({ error: '해당 운동 기록을 찾을 수 없습니다.' });
     }
 
-    // ③ 검증 통과 시 수정 처리
+    if (existingWorkout.userId !== userId) {
+      return res.status(403).json({ error: '본인의 운동 기록만 수정할 수 있습니다.' });
+    }
+
     const updatedWorkout = await prisma.workout.update({
-      where: { id: Number(id) },
+      where: { id: workoutId },
       data: {
         title,
         sets: Number(sets),
@@ -275,13 +279,13 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 5. 내 운동 기록 삭제 (DELETE)
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+// 5. 운동 기록 삭제 (DELETE)
+router.delete('/:id', async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
     const workoutId = Number(req.params.id);
-    const userId = req.user?.id;
+    const userId = authReq.userId!;
 
-    // 1. 해당 운동 기록이 존재하는지 조회
     const existingWorkout = await prisma.workout.findUnique({
       where: { id: workoutId },
     });
@@ -290,61 +294,19 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: '해당 운동 기록을 찾을 수 없습니다.' });
     }
 
-    // 2. 작성자가 본인인지 검증
     if (existingWorkout.userId !== userId) {
       return res.status(403).json({ error: '본인의 운동 기록만 삭제할 수 있습니다.' });
     }
 
-    // 3. 운동 기록 삭제
     await prisma.workout.delete({
       where: { id: workoutId },
     });
 
-    res.json({ message: '🗑️ 운동 기록 삭제 완료!' });
+    res.status(200).json({ message: '🗑️ 운동 기록 삭제 완료!' });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: '운동 기록 삭제 중 오류가 발생했습니다.' });
   }
 });
-
-// 필요한 컨트롤러 및 인증 미들웨어 import
-
-/**
- * @swagger
- * /workouts:
- *   get:
- *     summary: 운동 기록 목록 조회
- *     tags: [Workouts]
- *     responses:
- *       200:
- *         description: 운동 목록 조회 성공
- *   post:
- *     summary: 운동 기록 생성
- *     tags: [Workouts]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *                 example: "벤치프레스"
- *               sets:
- *                 type: number
- *                 example: 5
- *               weight:
- *                 type: number
- *                 example: 80
- *               reps:
- *                 type: number
- *                 example: 10
- *     responses:
- *       201:
- *         description: 운동 기록 생성 성공
- */
-// 기존 운동 라우트 선언부
-// router.get('/', authenticateToken, getWorkouts);
-// router.post('/', authenticateToken, createWorkout);
 
 export default router;
