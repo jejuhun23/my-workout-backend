@@ -9,16 +9,17 @@ const options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: '🏋️ 운동 메모장 API 문서',
+            title: 'Workout API',
             version: '1.0.0',
-            description: 'Node.js, Express, TypeScript, Prisma 기반 운동 메모장 REST API 명세서입니다.',
         },
         servers: [
             {
-                url: 'http://localhost:3000',
-                description: '로컬 개발 서버',
+                url: 'https://my-workout-api-g497.onrender.com',
+                description: 'Production Server (Render)',
             },
         ],
+        // 👇 이 부분(components, security)을 추가해 주세요!
+        // 👇 아래 components 및 security 설정 추가
         components: {
             securitySchemes: {
                 bearerAuth: {
@@ -28,7 +29,12 @@ const options = {
                 },
             },
         },
+        security: [
+            {
+                bearerAuth: [],
+            },
+        ],
     },
-    apis: ['./src/routes/*.ts', './src/app.ts'],
+    apis: ['./src/routes/*.ts', './dist/routes/*.js'],
 };
 exports.specs = (0, swagger_jsdoc_1.default)(options);

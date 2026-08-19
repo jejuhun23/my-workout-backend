@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors'; // 👈 1. CORS 불러오기
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './config/swagger';
 import authRouter from './routes/auth';
@@ -6,6 +7,8 @@ import workoutRouter from './routes/workout';
 import path from 'path';
 
 const app = express();
+
+app.use(cors()); // 👈 2. 모든 요청 출처 허용 미들웨어 적용
 
 // 💡 Swagger UI 설정 옵션 추가 (CDN 정적 자원 연결)
 const swaggerUiOptions = {

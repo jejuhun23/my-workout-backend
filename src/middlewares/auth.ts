@@ -1,28 +1,4 @@
-/**
- * @swagger
- * /auth/login:
- *   post:
- *     summary: 로그인
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object:
- *             properties:
- *               email:
- *                 type: string
- *                 example: rlawogjs222000@naver.com
- *               password:
- *                 type: string
- *                 example: "@bbc1472588!"
- *     responses:
- *       200:
- *         description: 로그인 성공 및 토큰 발급
- *       400:
- *         description: 잘못된 요청 또는 회원 정보 없음
- */import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 // Request 인터페이스 확장
